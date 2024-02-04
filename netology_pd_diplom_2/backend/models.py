@@ -117,7 +117,7 @@ class Shop(models.Model):
         ordering = ('-name',)
 
     def __str__(self):
-        return self.name
+        return f'Shop: {self.name}'
 
 
 class Category(models.Model):
@@ -168,6 +168,9 @@ class ProductInfo(models.Model):
             models.UniqueConstraint(fields=['product', 'shop', 'external_id'], name='unique_product_info'),
         ]
 
+    ordering = ('-product',)
+    def __str__(self):
+        return f'{self.shop} - арт.{self.external_id} - {self.product} {self.price}/{self.price_rrc}руб., {self.quantity}шт.'
 
 class Parameter(models.Model):
     objects = models.manager.Manager()

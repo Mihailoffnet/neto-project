@@ -459,6 +459,7 @@ class PartnerUpdate(APIView):
 
         return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
 
+# выгрузка товаров в файл python ./manage.py dumpdata backend.productinfo --indent 2 --format yaml > db.yaml
 
 class PartnerState(APIView):
     """
