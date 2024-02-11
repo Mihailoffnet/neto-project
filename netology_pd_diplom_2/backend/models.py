@@ -92,7 +92,7 @@ class User(AbstractUser):
     type = models.CharField(verbose_name='Тип пользователя', choices=USER_TYPE_CHOICES, max_length=5, default='buyer')
 
     def __str__(self):
-        return f'{self.first_name} {self.last_name}'
+        return f'{self.id}: {self.first_name} {self.last_name} - {self.type}'
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -131,7 +131,7 @@ class Category(models.Model):
         ordering = ('-name',)
 
     def __str__(self):
-        return self.name
+        return f'{self.id} : {self.name}'
 
 
 class Product(models.Model):
@@ -143,10 +143,10 @@ class Product(models.Model):
     class Meta:
         verbose_name = 'Продукт'
         verbose_name_plural = "Список продуктов"
-        ordering = ('-name',)
+        ordering = ('id',)
 
     def __str__(self):
-        return self.name
+        return f'{self.id} : {self.name}'
 
 
 class ProductInfo(models.Model):
@@ -237,7 +237,7 @@ class Order(models.Model):
 
     class Meta:
         verbose_name = 'Заказ'
-        verbose_name_plural = "Список заказ"
+        verbose_name_plural = "Список заказов"
         ordering = ('-dt',)
 
     def __str__(self):
@@ -250,10 +250,15 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     objects = models.manager.Manager()
-    order = models.ForeignKey(Order, verbose_name='Заказ', related_name='ordered_items', blank=True,
+    order = models.ForeignKey(Order,
+                              verbose_name='Заказ',
+                              related_name='ordered_items',
+                              blank=True,
                               on_delete=models.CASCADE)
 
-    product_info = models.ForeignKey(ProductInfo, verbose_name='Информация о продукте', related_name='ordered_items',
+    product_info = models.ForeignKey(ProductInfo,
+                                     verbose_name='Информация о продукте',
+                                     related_name='ordered_items',
                                      blank=True,
                                      on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(verbose_name='Количество')

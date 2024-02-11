@@ -9,3 +9,7 @@ load_dotenv()
 print(os.getenv("EMAIL_HOST_USER"))
 print(os.getenv("DEBUG"))
 print(type(bool(os.getenv("DEBUG"))))
+
+
+print(os.getenv("EMAIL_PORT"))
+print(type(os.getenv("EMAIL_PORT")))
