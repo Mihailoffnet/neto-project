@@ -12,11 +12,11 @@ _*
 __pycache__/
 *.py[cod]
 *$py.class
-
 *.sqlite3
 env/
 venv/
 .venv/
+.env
 
 ### Project specific ###
 settings_local.py
