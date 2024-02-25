@@ -62,9 +62,9 @@ coverage.xml
 
 
 
-*/migrations/*
-.log
-db.sqlite3
+# */migrations/*
+# .log
+# db.sqlite3
 
 
 # Scrapy stuff:
