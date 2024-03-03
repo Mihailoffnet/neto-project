@@ -1,5 +1,5 @@
 from typing import Type
-from celery import shared_task
+
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db.models.signals import post_save
@@ -13,7 +13,6 @@ new_user_registered = Signal()
 new_order = Signal()
 
 
-@shared_task
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender, instance, reset_password_token, **kwargs):
     """
@@ -40,7 +39,6 @@ def password_reset_token_created(sender, instance, reset_password_token, **kwarg
     msg.send()
 
 
-@shared_task
 @receiver(post_save, sender=User)
 def new_user_registered_signal(sender: Type[User], instance: User, created: bool, **kwargs):
     """
@@ -63,20 +61,19 @@ def new_user_registered_signal(sender: Type[User], instance: User, created: bool
         msg.send()
 
 
-@shared_task
 @receiver(new_order)
-def new_order_signal(user_id, msg, **kwargs):
+def new_order_signal(user_id, **kwargs):
     """
     отправяем письмо при изменении статуса заказа
     """
     # send an e-mail to the user
-    user = User.objects.get(id=user_id)
+    user = get(id=user_id)
 
     msg = EmailMultiAlternatives(
         # title:
         f"Обновление статуса заказа",
         # message:
-        msg,
+        'Заказ сформирован',
         # from:
         settings.EMAIL_HOST_USER,
         # to:

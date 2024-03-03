@@ -793,9 +793,9 @@ class OrderView(APIView):
                Returns:
                - JsonResponse: The response indicating the status of the operation and any errors.
                """
-
         if not request.user.is_authenticated:
-            return JsonResponse({'Status': False, 'Error': 'Log in required'}, status=403)
+            return JsonResponse({'Status': False,
+                                 'Error': 'Log in required'}, status=403)
 
         if {'id', 'contact'}.issubset(request.data):
             if request.data['id'].isdigit():
@@ -806,13 +806,16 @@ class OrderView(APIView):
                         state='new')
                 except IntegrityError as error:
                     print(error)
-                    return JsonResponse({'Status': False, 'Errors': 'Неправильно указаны аргументы'})
+                    return JsonResponse({'Status': False,
+                                         'Errors': 'Неправильно указаны аргументы'})
                 else:
                     if is_updated:
-                        new_order.send(sender=self.__class__, user_id=request.user.id)
+                        new_order.send(sender=self.__class__,
+                                       user_id=request.user.id)
                         return JsonResponse({'Status': True})
 
-        return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
+        return JsonResponse({'Status': False,
+                             'Errors': 'Не указаны все необходимые аргументы'})
 
 class StorageView(APIView):
     """

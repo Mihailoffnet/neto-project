@@ -23,13 +23,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY", '=hs6$#5om031nujz4staql9mbuste=!dc^6)4opsjq!vvjxzj@')
+SECRET_KEY = '=hs6$#5om031nujz4staql9mbuste=!dc^6)4opsjq!vvjxzj@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
 DEBUG = bool(os.getenv("DEBUG", True))
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", ['*']).split()
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", ['*'])
 
 # Application definition
 
@@ -134,26 +134,16 @@ AUTH_USER_MODEL = 'backend.User'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-# if DEBUG:
-#     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# else:
-#     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-
+# EMAIL_USE_TLS = True
 # настройки почты https://dev-ed.ru/blog/django-email-gmail-mailru-yandex/
-# EMAIL_USE_TLS = False
+
 EMAIL_HOST = 'smtp.mail.ru'
+
 EMAIL_HOST_USER = 'vinogradov.artemij@bk.ru'
 EMAIL_HOST_PASSWORD = 'BNFk9TeLRcFcRumJKx76'
 EMAIL_PORT = '465'
 EMAIL_USE_SSL = True
 SERVER_EMAIL = EMAIL_HOST_USER
-
-# EMAIL_HOST = os.getenv("EMAIL_HOST", 'smtp.mail.ru')
-# EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", 'vinogradov.artemij@bk.ru')
-# EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", 'BNFk9TeLRcFcRumJKx76')
-# EMAIL_PORT = int(os.getenv("EMAIL_PORT", 465))
-# EMAIL_USE_SSL = bool(os.getenv("EMAIL_USE_SSL", True))
-# SERVER_EMAIL = os.getenv("SERVER_EMAIL", EMAIL_HOST_USER)
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -174,9 +164,4 @@ REST_FRAMEWORK = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = 'redis://127.0.0.1:16379/0'
-
-# Celery Configuration Options
-CELERY_TIMEZONE = "Asia/Yekaterinburg"
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_BROKER_URL = 'redis://localhost:16379/0'

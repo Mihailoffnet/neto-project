@@ -1,0 +1,15 @@
+[ { "product_info": 25, "quantity": 13 }, { "product_info": 26, "quantity": 12, } ]
+[ { "id": 25, "quantity": 13 }, { "id": 26, "quantity": 12, } ]
+
+[
+	{
+		"id":  1,
+		"quantity": 2
+
+	},
+	{
+		"id":  2,
+		"quantity": 3,
+
+	}
+]
