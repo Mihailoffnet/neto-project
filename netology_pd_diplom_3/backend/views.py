@@ -64,6 +64,7 @@ class RegisterAccount(APIView):
                     # сохраняем пользователя
                     user = user_serializer.save()
                     user.set_password(request.data['password'])
+                    new_user_registered.delay(user.id)
                     user.save()
                     return JsonResponse({'Status': True})
                 else:
@@ -460,49 +461,45 @@ class PartnerUpdate(APIView):
             return JsonResponse({'Status': False,
                                  'Error': 'Только для магазинов'}, status=403)
 
-        def process_data():
-            url = request.data.get('url')
-            if url:
-                validate_url = URLValidator()
-                try:
-                    validate_url(url)
-                except ValidationError as e:
-                    return JsonResponse({'Status': False, 'Error': str(e)})
-                else:
-                    stream = get(url).content
+        url = request.data.get('url')
+        if url:
+            validate_url = URLValidator()
+            try:
+                validate_url(url)
+            except ValidationError as e:
+                return JsonResponse({'Status': False, 'Error': str(e)})
+            else:
+                stream = get(url).content
 
-                    data = load_yaml(stream, Loader=Loader)
+                data = load_yaml(stream, Loader=Loader)
 
-                    shop, _ = Shop.objects.get_or_create(
-                        name=data['shop'], user_id=request.user.id)
-                    for category in data['categories']:
-                        category_object, _ = Category.objects.get_or_create(
-                            id=category['id'], name=category['name'])
-                        category_object.shops.add(shop.id)
-                        category_object.save()
-                    ProductInfo.objects.filter(shop_id=shop.id).delete()
-                    for item in data['goods']:
-                        product, _ = Product.objects.get_or_create(
-                            name=item['name'], category_id=item['category'])
+                shop, _ = Shop.objects.get_or_create(
+                    name=data['shop'], user_id=request.user.id)
+                for category in data['categories']:
+                    category_object, _ = Category.objects.get_or_create(
+                        id=category['id'], name=category['name'])
+                    category_object.shops.add(shop.id)
+                    category_object.save()
+                ProductInfo.objects.filter(shop_id=shop.id).delete()
+                for item in data['goods']:
+                    product, _ = Product.objects.get_or_create(
+                        name=item['name'], category_id=item['category'])
 
-                        product_info = ProductInfo.objects.create(
-                            product_id=product.id,
-                            external_id=item['id'],
-                            model=item['model'],
-                            price=item['price'],
-                            price_rrc=item['price_rrc'],
-                            quantity=item['quantity'],
-                            shop_id=shop.id)
-                        for name, value in item['parameters'].items():
-                            parameter_object, _ = Parameter.objects.get_or_create(
-                                name=name)
-                            ProductParameter.objects.create(
-                                product_info_id=product_info.id,
-                                parameter_id=parameter_object.id,
-                                value=value)
-
-        thread = threading.Thread(target=process_data)
-        thread.start()
+                    product_info = ProductInfo.objects.create(
+                        product_id=product.id,
+                        external_id=item['id'],
+                        model=item['model'],
+                        price=item['price'],
+                        price_rrc=item['price_rrc'],
+                        quantity=item['quantity'],
+                        shop_id=shop.id)
+                    for name, value in item['parameters'].items():
+                        parameter_object, _ = Parameter.objects.get_or_create(
+                            name=name)
+                        ProductParameter.objects.create(
+                            product_info_id=product_info.id,
+                            parameter_id=parameter_object.id,
+                            value=value)
 
         return JsonResponse({'Status': True})
 
@@ -793,9 +790,9 @@ class OrderView(APIView):
                Returns:
                - JsonResponse: The response indicating the status of the operation and any errors.
                """
-
         if not request.user.is_authenticated:
-            return JsonResponse({'Status': False, 'Error': 'Log in required'}, status=403)
+            return JsonResponse({'Status': False,
+                                 'Error': 'Log in required'}, status=403)
 
         if {'id', 'contact'}.issubset(request.data):
             if request.data['id'].isdigit():
@@ -806,13 +803,16 @@ class OrderView(APIView):
                         state='new')
                 except IntegrityError as error:
                     print(error)
-                    return JsonResponse({'Status': False, 'Errors': 'Неправильно указаны аргументы'})
+                    return JsonResponse({'Status': False,
+                                         'Errors': 'Неправильно указаны аргументы'})
                 else:
                     if is_updated:
-                        new_order.send(sender=self.__class__, user_id=request.user.id)
+                        new_order.send(sender=self.__class__,
+                                       user_id=request.user.id)
                         return JsonResponse({'Status': True})
 
-        return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
+        return JsonResponse({'Status': False,
+                             'Errors': 'Не указаны все необходимые аргументы'})
 
 class StorageView(APIView):
     """
@@ -922,7 +922,7 @@ class StorageView(APIView):
                                  'Error': 'Log in required'}, status=403)
 
         order_items = OrderItem.objects.filter(order=kwargs['pk'])
-
+        order = Order.objects.filter(id=kwargs['pk'])[0]
         msg = ''
 
         if {'state'}.issubset(request.data):
@@ -951,14 +951,21 @@ class StorageView(APIView):
                     (ProductInfo.objects.
                      filter(id=product_info_id).update(quantity=(product_info_serializer.data['quantity'] -
                                                                  int(order_item_serializer.data['quantity']))))
-
+            elif request.data['state'] == 'canceled' and order.state == 'confirmed':
+                for order_item in order_items:
+                    order_item_serializer = OrderItemSerializer(instance=order_item)
+                    product_info_id = order_item_serializer.data['product_info']
+                    product_info = ProductInfo.objects.filter(id=product_info_id).first()
+                    product_info_serializer = ProductInfoSerializer(instance=product_info)
+                    (ProductInfo.objects.filter(id=product_info_id).
+                     update(quantity=(product_info_serializer.data['quantity'] +
+                                                                 int(order_item_serializer.data['quantity']))))
             Order.objects.filter(id=kwargs['pk']).update(state=request.data['state'])
-            order = Order.objects.filter(id=kwargs['pk'])
-            for item in order:
-                new_order_signal.delay(item.user_id, f'Статус вашего заказа №{item.id} - {request.data["state"]}. ' + msg)
-                return JsonResponse({'Status': True,
-                                         'Msg': f'Статус заказа с id: '
-                                                f'{item.id} изменён на {request.data["state"]}'}, status=200)
+
+            new_order_signal.delay(order.user_id, msg=f'Статус вашего заказа №{order.id} - {request.data["state"]}. ' + msg)
+            return JsonResponse({'Status': True,
+                                     'Msg': f'Статус заказа с id: '
+                                            f'{order.id} изменён на {request.data["state"]}'}, status=200)
         return JsonResponse({'Status': False,
                              'Errors': 'Не указаны все необходимые аргументы'})
 
