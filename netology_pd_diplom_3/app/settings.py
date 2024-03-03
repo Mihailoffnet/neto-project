@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'django_celery_results',
 ]
 
-CELERY_RESULT_BACKEND = 'django-db'
+
 CELERY_CACHE_BACKEND = 'django-cache'
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
 
@@ -174,7 +174,12 @@ REST_FRAMEWORK = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = 'redis://127.0.0.1:16379/0'
+# CELERY_BROKER_URL = 'redis://127.0.0.1:16379/0'
+CELERY_BROKER_URL = 'redis://redis:6379/1'
+
+# CELERY_RESULT_BACKEND = 'django-db'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/2'
+
 
 # Celery Configuration Options
 CELERY_TIMEZONE = "Asia/Yekaterinburg"
