@@ -141,19 +141,19 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 # настройки почты https://dev-ed.ru/blog/django-email-gmail-mailru-yandex/
 # EMAIL_USE_TLS = False
-EMAIL_HOST = 'smtp.mail.ru'
-EMAIL_HOST_USER = 'vinogradov.artemij@bk.ru'
-EMAIL_HOST_PASSWORD = 'BNFk9TeLRcFcRumJKx76'
-EMAIL_PORT = '465'
-EMAIL_USE_SSL = True
-SERVER_EMAIL = EMAIL_HOST_USER
+# EMAIL_HOST = 'smtp.mail.ru'
+# EMAIL_HOST_USER = 'vinogradov.artemij@bk.ru'
+# EMAIL_HOST_PASSWORD = 'BNFk9TeLRcFcRumJKx76'
+# EMAIL_PORT = '465'
+# EMAIL_USE_SSL = True
+# SERVER_EMAIL = EMAIL_HOST_USER
 
-# EMAIL_HOST = os.getenv("EMAIL_HOST", 'smtp.mail.ru')
-# EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", 'vinogradov.artemij@bk.ru')
-# EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", 'BNFk9TeLRcFcRumJKx76')
-# EMAIL_PORT = int(os.getenv("EMAIL_PORT", 465))
-# EMAIL_USE_SSL = bool(os.getenv("EMAIL_USE_SSL", True))
-# SERVER_EMAIL = os.getenv("SERVER_EMAIL", EMAIL_HOST_USER)
+EMAIL_HOST = os.getenv("EMAIL_HOST", 'smtp.mail.ru')
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", 'vinogradov.artemij@bk.ru')
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", 'BNFk9TeLRcFcRumJKx76')
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 465))
+EMAIL_USE_SSL = bool(os.getenv("EMAIL_USE_SSL", True))
+SERVER_EMAIL = os.getenv("SERVER_EMAIL", EMAIL_HOST_USER)
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
