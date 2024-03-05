@@ -41,39 +41,36 @@ def password_reset_token_created(sender, instance, reset_password_token, **kwarg
 
 
 @shared_task
-def new_user_registered(user_id, **kwargs):
+@receiver(post_save, sender=User)
+def new_user_registered_signal(sender: Type[User], instance: User, created: bool, **kwargs):
     """
      отправляем письмо с подтрердждением почты
     """
-    user = User.objects.get(id=user_id)
-    token, _ = ConfirmEmailToken.objects.get_or_create(user_id=user.pk)
+    if created and not instance.is_active:
+        # send an e-mail to the user
+        token, _ = ConfirmEmailToken.objects.get_or_create(user_id=instance.pk)
 
-    msg = EmailMultiAlternatives(
-        # title:
-        f"Password Reset Token for {user.email}",
-        # message:
-        token.key,
-        # from:
-        settings.EMAIL_HOST_USER,
-        # to:
-        [user.email]
-    )
-    msg.send()
+        msg = EmailMultiAlternatives(
+            # title:
+            f"Password Reset Token for {instance.email}",
+            # message:
+            token.key,
+            # from:
+            settings.EMAIL_HOST_USER,
+            # to:
+            [instance.email]
+        )
+        msg.send()
 
 
 @shared_task
 @receiver(new_order)
-def new_order_signal(user_id, **kwargs):
+def new_order_signal(user_id, msg, **kwargs):
     """
     отправяем письмо при изменении статуса заказа
     """
     # send an e-mail to the user
     user = User.objects.get(id=user_id)
-
-    msg = "Заказ сформирован"
-
-    if 'msg' in kwargs.keys():
-        msg = kwargs['msg']
 
     msg = EmailMultiAlternatives(
         # title:

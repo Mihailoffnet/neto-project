@@ -26,6 +26,8 @@ from backend.serializers import UserSerializer, CategorySerializer, \
 from backend.signals import new_order
 from backend.task import new_user_registered, new_order_signal
 
+import time
+
 
 class RegisterAccount(APIView):
     """
