@@ -1,5 +1,7 @@
 import threading
 from distutils.util import strtobool
+
+from celery import shared_task
 from rest_framework.request import Request
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
@@ -21,7 +23,8 @@ from backend.models import Shop, Category, Product, ProductInfo, Parameter, \
 from backend.serializers import UserSerializer, CategorySerializer, \
     ShopSerializer, ProductInfoSerializer, OrderItemSerializer, \
     OrderSerializer, ContactSerializer
-from backend.signals import new_user_registered, new_order, new_order_signal
+from backend.signals import new_order
+from backend.task import new_user_registered, new_order_signal
 
 
 class RegisterAccount(APIView):
@@ -461,45 +464,49 @@ class PartnerUpdate(APIView):
             return JsonResponse({'Status': False,
                                  'Error': 'Только для магазинов'}, status=403)
 
-        url = request.data.get('url')
-        if url:
-            validate_url = URLValidator()
-            try:
-                validate_url(url)
-            except ValidationError as e:
-                return JsonResponse({'Status': False, 'Error': str(e)})
-            else:
-                stream = get(url).content
+        @shared_task
+        def parsing():
+            url = request.data.get('url')
+            if url:
+                validate_url = URLValidator()
+                try:
+                    validate_url(url)
+                except ValidationError as e:
+                    return JsonResponse({'Status': False, 'Error': str(e)})
+                else:
+                    stream = get(url).content
 
-                data = load_yaml(stream, Loader=Loader)
+                    data = load_yaml(stream, Loader=Loader)
 
-                shop, _ = Shop.objects.get_or_create(
-                    name=data['shop'], user_id=request.user.id)
-                for category in data['categories']:
-                    category_object, _ = Category.objects.get_or_create(
-                        id=category['id'], name=category['name'])
-                    category_object.shops.add(shop.id)
-                    category_object.save()
-                ProductInfo.objects.filter(shop_id=shop.id).delete()
-                for item in data['goods']:
-                    product, _ = Product.objects.get_or_create(
-                        name=item['name'], category_id=item['category'])
+                    shop, _ = Shop.objects.get_or_create(
+                        name=data['shop'], user_id=request.user.id)
+                    for category in data['categories']:
+                        category_object, _ = Category.objects.get_or_create(
+                            id=category['id'], name=category['name'])
+                        category_object.shops.add(shop.id)
+                        category_object.save()
+                    ProductInfo.objects.filter(shop_id=shop.id).delete()
+                    for item in data['goods']:
+                        product, _ = Product.objects.get_or_create(
+                            name=item['name'], category_id=item['category'])
 
-                    product_info = ProductInfo.objects.create(
-                        product_id=product.id,
-                        external_id=item['id'],
-                        model=item['model'],
-                        price=item['price'],
-                        price_rrc=item['price_rrc'],
-                        quantity=item['quantity'],
-                        shop_id=shop.id)
-                    for name, value in item['parameters'].items():
-                        parameter_object, _ = Parameter.objects.get_or_create(
-                            name=name)
-                        ProductParameter.objects.create(
-                            product_info_id=product_info.id,
-                            parameter_id=parameter_object.id,
-                            value=value)
+                        product_info = ProductInfo.objects.create(
+                            product_id=product.id,
+                            external_id=item['id'],
+                            model=item['model'],
+                            price=item['price'],
+                            price_rrc=item['price_rrc'],
+                            quantity=item['quantity'],
+                            shop_id=shop.id)
+                        for name, value in item['parameters'].items():
+                            parameter_object, _ = Parameter.objects.get_or_create(
+                                name=name)
+                            ProductParameter.objects.create(
+                                product_info_id=product_info.id,
+                                parameter_id=parameter_object.id,
+                                value=value)
+
+        parsing.delay()
 
         return JsonResponse({'Status': True})
 
@@ -807,8 +814,7 @@ class OrderView(APIView):
                                          'Errors': 'Неправильно указаны аргументы'})
                 else:
                     if is_updated:
-                        new_order.send(sender=self.__class__,
-                                       user_id=request.user.id)
+                        new_order_signal(user_id=request.user.id)
                         return JsonResponse({'Status': True})
 
         return JsonResponse({'Status': False,
