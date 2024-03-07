@@ -2,8 +2,7 @@ import threading
 from distutils.util import strtobool
 
 from celery import shared_task
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.request import Request
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
@@ -17,6 +16,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from ujson import loads as load_json
 from yaml import load as load_yaml, Loader
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 
 from backend.models import Shop, Category, Product, ProductInfo, Parameter, \
     ProductParameter, Order, OrderItem, Contact, ConfirmEmailToken, User
@@ -447,6 +448,7 @@ class PartnerUpdate(APIView):
     - None
     """
 
+    @csrf_exempt
     def post(self, request, *args, **kwargs):
         """
                 Update the partner price list information.
@@ -468,7 +470,15 @@ class PartnerUpdate(APIView):
         url = request.data.get('url')
         user_id = request.user.id
 
-        parsing.delay(url, user_id)
+        if url:
+            validate_url = URLValidator()
+            try:
+                validate_url(url)
+            except ValidationError as e:
+                print(e)
+                return JsonResponse({'Status': False, 'Error': str(e)})
+            else:
+                parsing.delay(url, user_id)
 
         return JsonResponse({'Status': True})
 
@@ -776,7 +786,7 @@ class OrderView(APIView):
                                          'Errors': 'Неправильно указаны аргументы'})
                 else:
                     if is_updated:
-                        new_order_signal(user_id=request.user.email)
+                        new_order_signal.delay(request.user.email)
                         return JsonResponse({'Status': True})
 
         return JsonResponse({'Status': False,
