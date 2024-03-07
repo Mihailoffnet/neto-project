@@ -240,9 +240,9 @@ class Order(models.Model):
         verbose_name_plural = "Список заказов"
         ordering = ('-dt',)
 
-    def __str__(self):
-        date = str(self.dt)[:19]
-        return f' {self.id=}: {date}, {self.user}, {self.contact.id=}, {self.state=}'
+    # def __str__(self):
+    #     date = str(self.dt)[:19]
+    #     return f' {self.id=}: {date}, {self.user}, {self.contact.id=}, {self.state=}'
 
     # @property
     # def sum(self):
